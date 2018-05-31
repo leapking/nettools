@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 void tst_gethostbyaddr(struct sockaddr_in *who)
 {
@@ -30,7 +31,7 @@ void tst_getnameinfo(struct sockaddr_in *ip)
         perror("getnameinfo: localhost");
         perror(gai_strerror(error));
         printf("error=%d\n", error);
-        exit(1);
+	return;
     }
     printf("getnameinfo namebuf(%s)\n", namebuf);
 }
@@ -48,6 +49,12 @@ int main(int argc,char **argv)
     anip.sin_addr.s_addr = inet_addr(argv[1]);
     anip.sin_family = AF_INET;
 
-    tst_gethostbyaddr(&anip);
-    tst_getnameinfo(&anip);
+    while(1)
+    {
+    	tst_gethostbyaddr(&anip);
+    	tst_getnameinfo(&anip);
+	printf("\n");
+	sleep(1);
+    }
 }
+
