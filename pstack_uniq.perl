@@ -4,6 +4,21 @@
 # 比较时自动忽略函数参数
 # Author: leapking, 2018-11-28
 
+sub updateSameCnt
+{
+	my ($aref) = @_;
+	chomp(@{$aref}[0]);
+	my @words = split(/same:/, @{$aref}[0]);
+
+	if (length($words[1]) == 0)
+	{
+		$words[1] = 1;
+	}
+	$words[1] = $words[1] + 1;
+
+	@{$aref}[0] = "$words[0]same:$words[1]";
+}
+
 # 传递数组时，必须传递对数组的引用。注意对引用的使用。
 sub diffStack
 {
@@ -36,6 +51,7 @@ sub diffStack
 		}
 	}
 
+	updateSameCnt($aref2);
 	return(0);
 }
 
@@ -82,6 +98,7 @@ while(<filein>)
 	{
 		my @words = split(/ /, $_);
 		$StackId = $words[1];	     #将"Thread 24616"中的24616取到StackId，并作为hash key
+		$_ = $_." same:1";
 	}
 
 	push(@{$StackHash{$StackId}}, $_);   #将hash值$StackHash{$StackId}直接作为数组使用。将每一行存入数组。
