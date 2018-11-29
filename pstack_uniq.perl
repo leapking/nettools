@@ -49,7 +49,6 @@ while(<filein>)
 	$line = $_;
 	$line =~ s/^\s+/\s/g;
 
-	print fileout "$line";
 	if ($line =~ /^#[0-9]+/)
 	{
 		print fileout "\n";
@@ -58,7 +57,9 @@ while(<filein>)
 	{
 		print fileout "\n";
 	}
+	print fileout "$line";
 }
+print fileout "\n";
 close(filein);
 close(fileout);
 
@@ -72,9 +73,14 @@ while(<filein>)
 {
 	chomp($_);
 
+	if (length($_) == 0)
+	{
+		next;
+	}
+
 	if (/^Thread [0-9]+$/)
 	{
-		my @words = split(" ", $_);
+		my @words = split(/ /, $_);
 		$StackId = $words[1];	     #将"Thread 24616"中的24616取到StackId，并作为hash key
 	}
 
@@ -83,10 +89,10 @@ while(<filein>)
 close(filein);
 
 # 2. uniq stacks
-my $same = 1;
+my $match = 1;
 foreach my $stackId (keys %StackHash)
 {
-	$same = 1;
+	$match = 1;
 	#print "$stackId => ${$StackHash{$stackId}}[0]\n";
 
 	if (keys %UniqStackHash == 0)
@@ -99,13 +105,13 @@ foreach my $stackId (keys %StackHash)
 	{
 		if (diffStack(\@{$StackHash{$stackId}}, \@{$UniqStackHash{$uniqStackId}}) == 0)
 		{
-			print "$stackId same as $uniqStackId\n";
-			$same = 0;
+			print "$stackId match as $uniqStackId\n";
+			$match = 0;
 			last;
 		}
 	}
 
-	if ($same == 1)
+	if ($match == 1)
 	{
 		$UniqStackHash{$stackId} = $StackHash{$stackId};
 	}
