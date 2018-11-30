@@ -91,7 +91,7 @@ while(<filein>)
 		next;
 	}
 
-	if (/^Thread [0-9]+$/)
+	if (/^Thread [0-9]+/)
 	{
 		my @words = split(' ', $line);
 		$StackId = $words[1];	      #将"Thread 24616"中的24616取到StackId，并作为hash key
