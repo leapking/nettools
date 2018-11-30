@@ -1,9 +1,10 @@
 #!usr/bin/perl
 # 该脚本用于将pstack打印出来的堆栈信息去重
-# 参数：pstack输出文件
-# 比较时自动忽略函数参数
+# 参数：pstack输出的文件
+# 注意：比较时会自动忽略函数参数
 # Author: leapking, 2018-11-28
 
+# 统计出现的次数，在数组第一行后面追加"same:$num"
 sub updateSameCnt
 {
 	my ($aref) = @_;
@@ -57,57 +58,55 @@ sub diffStack
 
 # Main
 # 0. 移除非正常的换行
-open(fileout, ">$ARGV[0].".tmp);
-open(filein, $ARGV[0]);
+$file = "$ARGV[0]";
+$tmpfile = "$file.tmp";
+open(filein, $file) or die "failed to open \"$file\": $!";
+open(fileout, ">$tmpfile") or die "failed to open \"$tmpfile\": $!";
 while(<filein>)
 {
 	chomp($_);
-	$line = $_;
+	my $line = $_;
 	$line =~ s/^\s+/\s/g;
 
-	if ($line =~ /^#[0-9]+/)
-	{
-		print fileout "\n";
-	}
-	elsif ($line =~ /^Thread/)
+	if ($line =~ /^#[0-9]+|Thread/)
 	{
 		print fileout "\n";
 	}
 	print fileout "$line";
 }
-print fileout "\n";
 close(filein);
 close(fileout);
 
-%StackHash=();
-%UniqStackHash=();
-
-# 1. put all stack into array
-open(filein, "$ARGV[0].".tmp);
-$StackId;
+# 1. 将堆栈装入数组，再组织成hash结构
+$StackId = 0;
+%StackHash = ();
+open(filein, $tmpfile);
 while(<filein>)
 {
 	chomp($_);
+	my $line = $_;
 
-	if (length($_) == 0)
+	if (length($line) == 0)
 	{
 		next;
 	}
 
 	if (/^Thread [0-9]+$/)
 	{
-		my @words = split(/ /, $_);
-		$StackId = $words[1];	     #将"Thread 24616"中的24616取到StackId，并作为hash key
-		$_ = $_." same:1";
+		my @words = split(' ', $line);
+		$StackId = $words[1];	      #将"Thread 24616"中的24616取到StackId，并作为hash key
+		$line = $line." same:1";      #在第一行后面追加"same:1"，标示出现次数
 	}
 
-	push(@{$StackHash{$StackId}}, $_);   #将hash值$StackHash{$StackId}直接作为数组使用。将每一行存入数组。
+	push(@{$StackHash{$StackId}}, $line); #将hash值$StackHash{$StackId}直接作为数组使用，将每一行存入数组
 }
 close(filein);
+unlink($tmpfile);
 
-# 2. uniq stacks
-my $match = 1;
-foreach my $stackId (keys %StackHash)
+# 2. 对堆栈进行去重
+$match = 1;
+%UniqStackHash = ();
+foreach my $stackId (sort {$a<=>$b} keys %StackHash)
 {
 	$match = 1;
 	#print "$stackId => ${$StackHash{$stackId}}[0]\n";
@@ -135,10 +134,12 @@ foreach my $stackId (keys %StackHash)
 }
 
 # 3. output uniq stack
-foreach my $uniqStackId (keys %UniqStackHash)
+foreach my $uniqStackId (sort {$a<=>$b} keys %UniqStackHash)
 {
 	#print "$uniqStackId => ${$UniqStackHash{$uniqStackId}}[0]\n";
 	#print @{$UniqStackHash{$uniqStackId}};
+
+	print "\n";
 	foreach $line (@{$UniqStackHash{$uniqStackId}})
 	{
 		print "$line\n";
