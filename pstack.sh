@@ -37,13 +37,5 @@ detach
 quit
 EOF
 sed -n -e 's/(gdb) //' -e '/^#/p' -e '/^  /p'
-else
-gdb -p $thread <<EOF 2>&1 |
-set pagination off
-bt
-detach
-quit
-EOF
-sed -n -e 's/(gdb) //' -e '/^#/p' -e '/^  /p'
 fi
 done
