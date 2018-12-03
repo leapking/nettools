@@ -4,23 +4,25 @@
 # 注意：比较时会自动忽略函数参数
 # Author: leapking, 2018-11-28
 
-# 统计出现的次数，在数组第一行后面追加"@Same:$num"
+# 统计出现的次数
+# 在数组第一行后面追加"@Same:$num"用于记录重复次数
 sub updateSameCnt
 {
 	my ($aref) = @_;
 	chomp(@{$aref}[0]);
-	my @words = split(/\@Same:/, @{$aref}[0]);
 
-	if (length($words[1]) == 0)
+	if (@{$aref}[0] !~ /\@Same:/)
 	{
-		@{$aref}[0] = "$words[0] \@Same:1\n";
+		@{$aref}[0] = "@{$aref}[0] \@Same:1\n";
 		return (0);
 	}
 
+	my @words = split(/\@Same:/, @{$aref}[0]);
 	$words[1] = $words[1] + 1;
 	@{$aref}[0] = "$words[0]\@Same:$words[1]\n";
 }
 
+# 比较两个堆栈信息是否一样
 # 传递数组时，必须传递对数组的引用。注意对引用的使用。
 sub diffStack
 {
@@ -33,13 +35,11 @@ sub diffStack
 
 	for($i = 1; $i < @{$aref1}; $i = $i + 1)
 	{
-		my $str1 = @{$aref1}[$i];
-		my $str2 = @{$aref2}[$i];
+		# 将(后面都内容都去掉后比较，忽略函数参数
+		my @stack1 = split(/\(/, @{$aref1}[$i]);
+		my @stack2 = split(/\(/, @{$aref2}[$i]);
 
-		$str1 =~ s/\(.*$//g;
-		$str2 =~ s/\(.*$//g;
-
-		if($str1 cmp $str2)
+		if($stack1[0] cmp $stack2[0])
 		{
 			return(1);
 		}
@@ -81,8 +81,7 @@ sub uniqAllStack()
 		print "\n";
 		print @{$uniqStack{$uniqStackId}};
 	}
-	print "\nuniq    stack num: ".keys %uniqStack;
-	print "\n";
+	print "\nuniq    stack num: ".keys(%uniqStack)."\n";
 }
 
 # 查询含某个关键字的堆栈
@@ -96,7 +95,7 @@ sub searchAllStack
 		return (1);
 	}
 
-	print "========== Search All Stack: $keyword ==========\n";
+	print "\n========== Search All Stack: $keyword ==========\n";
 	foreach my $stackId (sort {$a<=>$b} keys %StackHash)
 	{
 		# search keyword from stack array
@@ -113,11 +112,11 @@ sub searchAllStack
 }
 
 # Main
-if (@ARGV == 0)
+if (@ARGV == 0 || ! -e "$ARGV[0]")
 {
 	print "Usage: $0 {StackFileName} [keyword]\n";
-	print "\tuniq or search stackfile\n";
-	exit(1);
+	print "uniq or search stackfile\n";
+	exit(0);
 }
 
 # 0. 移除非正常的换行
@@ -129,9 +128,9 @@ while(<filein>)
 {
 	chomp($_);
 	my $line = $_;
-	$line =~ s/^\s+/\s/g;
 
-	if ($line =~ /^#[0-9]+|Thread/)
+	$line =~ s/^\s+/\s/g;
+	if ($line =~ /^#[0-9]+|Thread/) #判断何时需要换行
 	{
 		print fileout "\n";
 	}
@@ -143,7 +142,7 @@ close(fileout);
 # 1. 将堆栈装入数组，再组织成hash结构
 $StackId = 0;
 %StackHash = ();
-open(filein, $tmpfile);
+open(filein, $tmpfile) or die "failed to open \"$tmpfile\": $!";
 while(<filein>)
 {
 	chomp($_);
@@ -165,9 +164,7 @@ while(<filein>)
 close(filein);
 unlink($tmpfile);
 
+# 2. dispatch
 uniqAllStack();
-
 searchAllStack($ARGV[1]);
-
-print "all     stack num: ".keys %StackHash;
-print "\n";
+print "all     stack num: ".keys(%StackHash)."\n";
