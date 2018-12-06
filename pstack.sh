@@ -5,8 +5,6 @@
 # leapking, 2018-09-24
 # -------------------------------------------------------------------
 
-GDB=${GDB:-gdb}
-
 PID=$1
 SYMBOLFILE=$2
 
@@ -23,20 +21,24 @@ elif [ x"$SYMBOLFILE" != x ]; then
 	SYMBOLFILE="symbol-file $SYMBOLFILE"
 fi
 
-# GDB doesn't allow "thread apply all bt" when the process isn't threaded;
-# need to peek at the process to determine if that or the simpler "bt" should be used.
+# GDB doesn't allow "thread apply all bt" when the process isn't
+# threaded; need to peek at the process to determine if that or the
+# simpler "bt" should be used.
+
 backtrace="bt"
 if test -d /proc/$1/task ; then
     # Newer kernel; has a task/ directory.
     if test `/bin/ls /proc/$1/task | /usr/bin/wc -l` -gt 1 2>/dev/null ; then
-        backtrace="thread apply all bt"
+	backtrace="thread apply all bt"
     fi
 elif test -f /proc/$1/maps ; then
     # Older kernel; go by it loading libpthread.
     if /bin/grep -e libpthread /proc/$1/maps > /dev/null 2>&1 ; then
-        backtrace="thread apply all bt"
+	backtrace="thread apply all bt"
     fi
 fi
+
+GDB=${GDB:-/usr/bin/gdb}
 
 if $GDB -nx --quiet --batch --readnever > /dev/null 2>&1; then
     readnever=--readnever
@@ -57,7 +59,7 @@ $backtrace
 detach
 quit
 EOF
-sed -n \
+/bin/sed -n \
     -e 's/(gdb) //g' \
     -e '/^#/p' \
     -e '/^ /p' \
@@ -68,14 +70,14 @@ sed -n \
 # ---------------------------
 trap "exit" HUP INT QUIT TSTP
 
-i=0
-if [ "$backtrace" == 'bt' ]; then
-        for id in $(ls /proc/$PID/task)
-        do
+if [ ${#backtrace} -eq 2 ]; then
+	i=0
+	for id in $(ls /proc/$PID/task)
+	do
 		i=$((i+1))
 		echo "Thread $i (Thread 0x0000000 (LWP $id)):"
-                printstack $id
-        done
+		printstack $id
+	done
 else
-        printstack $PID
+	printstack $PID
 fi
