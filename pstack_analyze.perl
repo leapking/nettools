@@ -1,4 +1,4 @@
-#!usr/bin/perl
+#!/usr/bin/perl
 # 该脚本用于将pstack打印出来的堆栈信息去重
 # 参数：pstack输出的文件
 # 注意：比较时会自动忽略函数参数
@@ -61,7 +61,7 @@ sub uniqAllStack()
 		{
 			if (diffStack(\@{$StackHash{$stackId}}, \@{$uniqStack{$uniqStackId}}) == 0)
 			{
-				print "$stackId match as $uniqStackId\n";
+				#print "$stackId match as $uniqStackId\n";
 				updateSameCnt(\@{$uniqStack{$uniqStackId}});
 				$match = 0;
 				last;
@@ -87,26 +87,40 @@ sub uniqAllStack()
 # 查询含某个关键字的堆栈
 sub searchAllStack
 {
-	my $keyword = @_[0];
+	my $grep = 0;
+	my $keyword = "";
 	my $matchCnt = 0;
 
-	if (length($keyword) == 0)
-	{
-		return (1);
+	if (@ARGV < 2) {
+		return(1);
+	} elsif (@ARGV == 2) {
+		$keyword = $ARGV[1];
+	} elsif (@ARGV > 2) {
+		if ($ARGV[1] == "-v") {
+			$grep = 1;
+			$keyword = $ARGV[2];
+		} else {
+			return(1);
+		}
 	}
 
-	print "\n========== Search All Stack: $keyword ==========\n";
+	print "\n========== Search All Stack: grep $ARGV[1] $ARGV[2] ==========\n";
 	foreach my $stackId (sort {$a<=>$b} keys %StackHash)
 	{
-		# search keyword from stack array
-		if (grep(/$keyword/, @{$StackHash{$stackId}}) == 0)
-		{
-			next;
+		if ($grep == 0) {
+			if (grep(/$keyword/, @{$StackHash{$stackId}}))
+			{
+				print "\n";
+				print @{$StackHash{$stackId}};
+				$matchCnt = $matchCnt + 1;
+			}
+		} else {
+			if (!grep(/$keyword/, @{$StackHash{$stackId}})) {
+				print "\n";
+				print @{$StackHash{$stackId}};
+				$matchCnt = $matchCnt + 1;
+			}
 		}
-
-		print "\n";
-		print @{$StackHash{$stackId}};
-		$matchCnt = $matchCnt + 1;
 	}
 	print "\nmatched stack num: $matchCnt\n";
 }
@@ -129,8 +143,8 @@ while(<filein>)
 	chomp($_);
 	my $line = $_;
 
-	$line =~ s/^\s+/\s/g;
-	if ($line =~ /^#[0-9]+|Thread/) #判断何时需要换行
+	$line =~ s/^\s+/ /g;
+	if (length($line) == 0 || $line =~ /^#[0-9]+|Thread/) #判断何时需要换行
 	{
 		print fileout "\n";
 	}
@@ -140,6 +154,7 @@ close(filein);
 close(fileout);
 
 # 1. 将堆栈装入数组，再组织成hash结构
+$StackCnt = 0;
 $StackId = 0;
 %StackHash = ();
 open(filein, $tmpfile) or die "failed to open \"$tmpfile\": $!";
@@ -148,7 +163,7 @@ while(<filein>)
 	chomp($_);
 	my $line = $_;
 
-	if (length($line) == 0)
+	if (length($line) == 0 || $line !~ /^Thread|#[0-9]+/) #判断何时需要换行
 	{
 		next;
 	}
@@ -156,7 +171,8 @@ while(<filein>)
 	if (/^Thread [0-9]+/)
 	{
 		my @words = split(' ', $line);
-		$StackId = $words[1];			#将"Thread 24616"中的24616取到StackId，并作为hash key
+		$StackId = $words[1].".$StackCnt";			#将"Thread 24616"中的24616取到StackId，并作为hash key
+		$StackCnt = $StackCnt + 1;
 	}
 
 	push(@{$StackHash{$StackId}}, "$line\n");	#将hash值$StackHash{$StackId}直接作为数组使用，将每一行存入数组
@@ -166,5 +182,5 @@ unlink($tmpfile);
 
 # 2. dispatch
 uniqAllStack();
-searchAllStack($ARGV[1]);
+searchAllStack();
 print "all     stack num: ".keys(%StackHash)."\n";
