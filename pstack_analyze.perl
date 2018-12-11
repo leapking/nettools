@@ -51,18 +51,17 @@ sub diffStack
 sub uniqAllStack()
 {
 	my $match = 1;
-	my %uniqStack = ();
 
 	print "========== Uniq All Stack ==========\n";
 	foreach my $stackId (sort {$a<=>$b} keys %StackHash)
 	{
 		$match = 1;
-		foreach my $uniqStackId (keys %uniqStack)
+		foreach my $uniqId (keys %UniqStack)
 		{
-			if (diffStack(\@{$StackHash{$stackId}}, \@{$uniqStack{$uniqStackId}}) == 0)
+			if (diffStack(\@{$StackHash{$stackId}}, \@{$UniqStack{$uniqId}}) == 0)
 			{
-				#print "$stackId match as $uniqStackId\n";
-				updateSameCnt(\@{$uniqStack{$uniqStackId}});
+				#print "$stackId match as $uniqId\n";
+				updateSameCnt(\@{$UniqStack{$uniqId}});
 				$match = 0;
 				last;
 			}
@@ -70,18 +69,18 @@ sub uniqAllStack()
 
 		if ($match == 1)
 		{
-			$uniqStack{$stackId} = $StackHash{$stackId};
-			updateSameCnt(\@{$uniqStack{$stackId}});
+			$UniqStack{$stackId} = $StackHash{$stackId};
+			updateSameCnt(\@{$UniqStack{$stackId}});
 		}
 	}
 
 	# output uniq stack
-	foreach my $uniqStackId (sort {$a<=>$b} keys %uniqStack)
+	foreach my $uniqId (sort {$a<=>$b} keys %UniqStack)
 	{
 		print "\n";
-		print @{$uniqStack{$uniqStackId}};
+		print @{$UniqStack{$uniqId}};
 	}
-	print "\nuniq    stack num: ".keys(%uniqStack)."\n";
+	print "\nuniq    stack num: ".keys(%UniqStack)."\n";
 }
 
 # 查询含某个关键字的堆栈
@@ -105,20 +104,22 @@ sub searchAllStack
 	}
 
 	print "\n========== Search All Stack: grep $ARGV[1] $ARGV[2] ==========\n";
-	foreach my $stackId (sort {$a<=>$b} keys %StackHash)
+	foreach my $uniqId (sort {$a<=>$b} keys %UniqStack)
 	{
 		if ($grep == 0) {
-			if (grep(/$keyword/, @{$StackHash{$stackId}}))
+			if (grep(/$keyword/, @{$UniqStack{$uniqId}}))
 			{
 				print "\n";
-				print @{$StackHash{$stackId}};
-				$matchCnt = $matchCnt + 1;
+				print @{$UniqStack{$uniqId}};
+				my @words = split(/\@Same:/, @{$UniqStack{$uniqId}}[0]);
+				$matchCnt = $matchCnt + $words[1];
 			}
 		} else {
-			if (!grep(/$keyword/, @{$StackHash{$stackId}})) {
+			if (!grep(/$keyword/, @{$UniqStack{$uniqId}})) {
 				print "\n";
-				print @{$StackHash{$stackId}};
-				$matchCnt = $matchCnt + 1;
+				print @{$UniqStack{$uniqId}};
+				my @words = split(/\@Same:/, @{$UniqStack{$uniqId}}[0]);
+				$matchCnt = $matchCnt + $words[1];
 			}
 		}
 	}
@@ -126,14 +127,16 @@ sub searchAllStack
 }
 
 # Main
+(my $Program = $0) =~ s!.*/(.*)!$1!;
 if (@ARGV == 0 || ! -e "$ARGV[0]")
 {
-	print "Usage: $0 {StackFileName} [keyword]\n";
-	print "uniq or search stackfile\n";
+	print "$Program - uniq stackfile or search stack from uniq result\n\n";
+	print "Usage: perl $Program {StackFile} [-v] [keyword]\n";
+	print "Report bug to leapking\@126.com\n";
 	exit(0);
 }
 
-# 0. 移除非正常的换行
+# 0. remove some unexpected newline
 $file = "$ARGV[0]";
 $tmpfile = "$file.tmp";
 open(filein, $file) or die "failed to open \"$file\": $!";
@@ -153,7 +156,7 @@ while(<filein>)
 close(filein);
 close(fileout);
 
-# 1. 将堆栈装入数组，再组织成hash结构
+# 1. Load all stack info to %StackHash
 $StackCnt = 0;
 $StackId = 0;
 %StackHash = ();
@@ -171,7 +174,7 @@ while(<filein>)
 	if (/^Thread [0-9]+/)
 	{
 		my @words = split(' ', $line);
-		$StackId = $words[1].".$StackCnt";			#将"Thread 24616"中的24616取到StackId，并作为hash key
+		$StackId = $words[1].".$StackCnt";	#将"Thread 24616"中的24616取到StackId，并作为hash key
 		$StackCnt = $StackCnt + 1;
 	}
 
@@ -181,6 +184,9 @@ close(filein);
 unlink($tmpfile);
 
 # 2. dispatch
+%UniqStack = ();
 uniqAllStack();
+
 searchAllStack();
+
 print "all     stack num: ".keys(%StackHash)."\n";
