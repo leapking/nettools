@@ -10,20 +10,17 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-typedef struct malloc_chunk* mchunkptr;
-#define SIZE_SZ sizeof(size_t)
-#define mem2chunk(mem) ((mchunkptr)((char*)(mem) - 2*SIZE_SZ))
-#define PREV_INUSE 0x1
-#define IS_MMAPPED 0x2
-#define NON_MAIN_ARENA 0x4
-#define SIZE_BITS (PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA)
+#define PREV_INUSE	0x1
+#define IS_MMAPPED	0x2
+#define NON_MAIN_ARENA	0x4
+#define SIZE_BITS	(PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA)
+
 #define chunk_is_mmapped(p) ((p)->mchunk_size & IS_MMAPPED)
-#define chunksize_nomask(p)         ((p)->mchunk_size)
-#define chunksize(p) (chunksize_nomask (p) & ~(SIZE_BITS))
-#define inuse(p) ((((mchunkptr) (((char *) (p)) + chunksize (p)))->mchunk_size) & PREV_INUSE)
 
-struct malloc_chunk {
+#define chunksize(p) ((p)->mchunk_size & ~(SIZE_BITS))
+#define inuse(p) ((((mchunkptr) (((char *) (p)) + chunksize(p)))->mchunk_size) & PREV_INUSE)
 
+typedef struct malloc_chunk {
   size_t      mchunk_prev_size;  /* Size of previous chunk (if free).  */
   size_t      mchunk_size;       /* Size in bytes, including overhead. */
 
@@ -33,24 +30,24 @@ struct malloc_chunk {
   /* Only used for large blocks: pointer to next larger size.  */
   struct malloc_chunk* fd_nextsize; /* double links -- used only if free. */
   struct malloc_chunk* bk_nextsize;
-};
+} *mchunkptr;
 
 static size_t
 musable (void *mem)
 {
         mchunkptr p;
+
         if (mem == 0)
                 return 0;
 
-        p = mem2chunk (mem);
+        p = ((mchunkptr) ((char*) (mem) - 2 * sizeof(size_t)));
 
         if (chunk_is_mmapped (p))
-                return chunksize (p) - 2 * SIZE_SZ;
+                return chunksize (p) - 2 * sizeof(size_t);
         else if (inuse (p))
-                return chunksize (p) - SIZE_SZ;
+                return chunksize (p) - sizeof(size_t);
 }
 
-#define ARRYSIZE 150
 //#define GetMemRealSize(ptr) *(size_t *)((char *)(ptr)-sizeof(size_t))
 #define GetMemRealSize(ptr) musable(ptr)
 long MemoryCount = 0;
@@ -107,6 +104,7 @@ void __wrap_free(void *ptr)
 int
 main()
 {
+	#define ARRYSIZE 150
         int i;
         char *arry[ARRYSIZE+1] = {0};
 
@@ -145,4 +143,3 @@ main()
         else
                 fprintf(stdout, "\nno memory leak occured.\n");
 }
-
