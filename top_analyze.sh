@@ -18,13 +18,13 @@ elif ! grep -c top $topfile >/dev/null; then
 	exit 1
 fi
 
-if [ x"$type" == "xmem" ]; then
+if [ x"$type" = "xmem" ]; then
 	echo "TIME,VIRT,RES,%MEM"
-	awk 'BEGIN{info=""}/'"^top|$program"'/{if($1=="top"){info=$3;}else if(/'"$program"'/){info=info","$5","$6","$10;gsub(/[A-Za-Z]/,"",info);print info;info=""}}' $topfile
-elif [ x"$type" == "xcpu" ]; then
+	awk 'BEGIN{info=""}/^top/||/'"$program"'\s*$/{if(/^top/){info=$3;}else if(/'"$program"'/){info=info","$5","$6","$10;gsub(/[A-Za-Z]/,"",info);print info;info=""}}' $topfile
+elif [ x"$type" = "xcpu" ]; then
 	echo "time,%user,%system,%idle"
 	awk 'BEGIN{info=""}/^top|Cpu\(s\)/{if($1=="top"){info=$3;}else if(/Cpu\(s\)/){info=info","$2$3$5;gsub(/[A-Za-Z%]/,"",info);print info;info=""}}' $topfile
-elif [ x"$type" == "xload" ]; then
+elif [ x"$type" = "xload" ]; then
 	echo "time, average, max, min"
 	awk '/^top/{print $3", "$12" "$13" "$14}' $topfile
 else
