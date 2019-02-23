@@ -19,15 +19,15 @@ elif ! grep -c top $topfile >/dev/null; then
 fi
 
 if [ x"$type" = "xmem" ]; then
-        echo "TIME\tVIRT\tRES\t%MEM"
+        echo "DAYS\tTIME\tVIRT\tRES\t%MEM"
         awk 'function m2gb(size){if(size~/m/){gsub(/m/,"",size);size=sprintf("%.1f",size/1024)}return size} \
-        BEGIN{info=""}/^top/||/'"$program"'\s*$/{if(/^top/){info=$3;}else if(/'"$program"'/){info=info"\t"m2gb($5)"\t"m2gb($6)"\t"$10;gsub(/[%g]/,"",info);print info;info=""}}' $topfile
+        BEGIN{info="";days=1;hour=0}/^top/||/'"$program"'\s*$/{if(/^top/){info=$3;gsub(/:.*$/,"",$3);if($3<hour)days++;hour=$3}else if(/'"$program"'\s*$/){info=info"\t"m2gb($5)"\t"m2gb($6)"\t"$10;gsub(/[%g]/,"",info);print days"\t"info;info=""}}' $topfile
 elif [ x"$type" = "xcpu" ]; then
-        echo "time\t%user\t%system\t%idle"
-        awk -F '[, ]+' 'BEGIN{info=""}/^top|Cpu\(s\)/{if($1~/top/){info=$3;}else if(/Cpu\(s\)/){info=info"\t"$2"\t"$3"\t"$5;gsub(/[A-Za-z%,]/,"",info);print info;info=""}}' $topfile
+        echo "days\ttime\t%user\t%system\t%idle"
+        awk -F '[, ]+' 'BEGIN{info="";days=1;hour=0}/^top|Cpu\(s\)/{if(/^top/){info=$3;gsub(/:.*$/,"",$3);if($3<hour)days++;hour=$3}else if(/Cpu\(s\)/){info=info"\t"$2"\t"$3"\t"$5;gsub(/[A-Za-z%,]/,"",info);print days"\t"info;info=""}}' $topfile
 elif [ x"$type" = "xload" ]; then
-        echo "time\taverage\tmax\tmin"
-        awk '/^top/{time=$3;gsub(/^.*load average:/,"",$0);gsub(/,/,"",$0);print time"\t"$1"\t"$2"\t"$3}' $topfile
+        echo "days\ttime\taverage\tmax\tmin"
+        awk 'BEGIN{days=1;hour=0}/^top/{time=$3;gsub(/:.*$/,"",$3);if($3<hour)days++;hour=$3;gsub(/^.*load average:/,"",$0);gsub(/,/,"",$0);print days"\t"time"\t"$1"\t"$2"\t"$3}' $topfile
 else
 	echo "Unknown type: $type"
 fi
