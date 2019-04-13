@@ -2,6 +2,7 @@
 # This script is use to analyze result file of cmd: `top`
 # it can collect time and other info into csv format file, and draw picture with excel
 # Author: leapking, 2019/01/13
+# Move to https://github.com/dbcheck/sys_analyze
 
 topfile="$1"
 type="${2:-mem}"
