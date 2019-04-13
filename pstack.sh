@@ -3,6 +3,7 @@
 # -------------------------------------------------------------------
 # this script use gdb to attach process to print stack of per thread.
 # leapking, 2018-09-24
+# Move to: https://github.com/dbcheck/pstack
 # -------------------------------------------------------------------
 
 PID=$1
