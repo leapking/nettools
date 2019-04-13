@@ -3,6 +3,7 @@
 # 参数：pstack输出的文件
 # 注意：比较时会自动忽略函数参数
 # Author: leapking, 2018-11-28
+# Move to: https://github.com/dbcheck/pstack
 
 # 统计出现的次数
 # 在数组第一行后面追加"@Same:$num"用于记录重复次数
