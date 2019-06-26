@@ -6,6 +6,12 @@
 # Move to: https://github.com/dbcheck/pstack
 # -------------------------------------------------------------------
 
+#
+# print all thread stack to a file
+#(gdb) set logging file /tmp/test.txt
+#(gdb) thread apply all bt
+#
+
 PID=$1
 SYMBOLFILE=$2
 
