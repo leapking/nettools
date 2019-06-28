@@ -40,6 +40,9 @@ sub diffStack
 		my @stack1 = split(/\(/, @{$aref1}[$i]);
 		my @stack2 = split(/\(/, @{$aref2}[$i]);
 
+                $stack1[0] =~ s/0x.* in/ in/; ##5  0x0000000000002000 in ?? () 去掉in前的地址信息
+                $stack2[0] =~ s/0x.* in/ in/;
+
 		if($stack1[0] cmp $stack2[0])
 		{
 			return(1);
