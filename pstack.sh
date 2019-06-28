@@ -9,6 +9,7 @@
 #
 # print all thread stack to a file
 #(gdb) set logging file /tmp/test.txt
+#(gdb) set logging on
 #(gdb) thread apply all bt
 #
 
